@@ -29,7 +29,7 @@ env:
   ES_VERSION: es7
   TAG: ${{ github.sha }}
   SCRIPTS_DIR: test/e2e-mesh/e2e-istio/scripts
-  NGE2E_DIR: test/nge2e/istio
+  NGE2E_DIR: test/nge2e/nge2efile
   SW_OAP_BASE_IMAGE: openjdk:11-jdk
 
 jobs:
