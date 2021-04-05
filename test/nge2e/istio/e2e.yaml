@@ -1,0 +1,98 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This file is used to show how to write configuration files and can be used to test.
+
+setup:
+  env: kind
+  file: kind.yaml
+  steps:
+    - command: |
+        # kind k8s cluster is in $TMPDIR
+        cp $TMPDIR/e2e-k8s.config ~/.kube/config
+
+        # Install Istio
+        bash ${SCRIPTS_DIR}/istio.sh \
+          --set profile=demo \
+          --set meshConfig.defaultConfig.envoyMetricsService.address=skywalking-oap.istio-system:11800 \
+          --set values.telemetry.v2.enabled=false # disable the metadata-exchange extension intentionally to make sure metrics service doesn't rely on it
+    - command: |
+        # Install SkyWalking
+        git clone https://github.com/apache/skywalking-kubernetes.git
+        cd skywalking-kubernetes
+        git reset --hard dd749f25913830c47a97430618cefc4167612e75
+        cd chart
+        helm dep up skywalking
+        helm -n istio-system install skywalking skywalking \
+             --set fullnameOverride=skywalking \
+             --set elasticsearch.replicas=1 \
+             --set elasticsearch.minimumMasterNodes=1 \
+             --set elasticsearch.imageTag=7.5.1 \
+             --set oap.replicas=1 \
+             --set ui.image.repository=skywalking/ui \
+             --set ui.image.tag=$TAG \
+             --set oap.image.tag=$TAG \
+             --set oap.image.repository=skywalking/oap \
+             --set oap.storageType=elasticsearch7
+        kubectl -n istio-system get pods
+        sleep 3
+      wait:
+        - namespace: istio-system
+          resource: deployments/skywalking-oap
+          for: condition=available
+    - command: |
+        # Deploy demo services
+        wget https://raw.githubusercontent.com/istio/istio/$ISTIO_VERSION/samples/bookinfo/platform/kube/bookinfo.yaml
+        wget https://raw.githubusercontent.com/istio/istio/$ISTIO_VERSION/samples/bookinfo/networking/bookinfo-gateway.yaml
+    - path: bookinfo.yaml,bookinfo-gateway.yaml
+      wait:
+        - namespace: default
+          resource: pod
+          for: condition=Ready
+
+
+  runs: # commands are serial within one code block and parallel between code blocks
+    - command: | # it can be a shell script or anything executable
+        cp $TMPDIR/e2e-k8s.config ~/.kube/config
+        export GATEWAY_HOST=127.0.0.1
+        export GATEWAY_PORT=80
+        export WEBAPP_HOST=127.0.0.1
+        export WEBAPP_PORT=8080
+        export SW_VERSION=$(./mvnw -q -DforceStdout -N org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version)
+        ./mvnw -DskipTests -N install
+        ./mvnw -f apm-application-toolkit -DskipTests -am install
+
+      wait:
+        - namespace: default
+          resource: deployment/nginx1
+          for: condition=Available
+  timeout: 1200
+
+trigger:
+  action: http
+  interval: 3s
+  times: 5
+  url: http://localhost:9090/user
+  method: GET
+
+verify:
+  - actual: ../../test/verify/1.actual.yaml
+    expected: ../../test/verify/1.expected.yaml
+  - actual: ../../test/verify/2.actual.yaml
+    expected: ../../test/verify/2.expected.yaml
+  - actual: ../../test/verify/1.actual.yaml
+    expected: ../../test/verify/2.expected.yaml
+  - query: swctl --display yaml service ls
+    expected: ../../test/verify/3.expected.yaml

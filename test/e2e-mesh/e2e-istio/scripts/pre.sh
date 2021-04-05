@@ -22,16 +22,19 @@
 set -ex
 
 HELMVERSION=${HELMVERSION:-'helm-v3.0.0'}
-MINIKUBEVERESION=${MINIKUBEVERESION:-'minikube-v1.13.1'}
 K8SVERSION=${K8SVERSION:-'k8s-v1.19.2'}
+KINDVERSION=${KINDVERSION:-'v0.10.0'}
+
+curl -Lo ./e2e https://github.com/Humbertzhang/nge2etest/raw/master/e2e-linux
+chmod +x ./e2e
+sudo mv ./e2e /usr/local/bin/e2e
+
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/${KINDVERSION}/kind-linux-amd64
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
 
 curl -sSL https://get.helm.sh/${HELMVERSION}-linux-amd64.tar.gz | \
     sudo tar xz -C /usr/local/bin --strip-components=1 linux-amd64/helm
-
-sudo mkdir -p /usr/local/bin
-curl -sSL "https://storage.googleapis.com/minikube/releases/${MINIKUBEVERESION#minikube-}/minikube-linux-amd64" -o /tmp/minikube
-chmod +x /tmp/minikube
-sudo mv /tmp/minikube /usr/local/bin/minikube
 
 curl -sSL "https://storage.googleapis.com/kubernetes-release/release/${K8SVERSION#k8s-}/bin/linux/amd64/kubectl" -o /tmp/kubectl
 chmod +x /tmp/kubectl

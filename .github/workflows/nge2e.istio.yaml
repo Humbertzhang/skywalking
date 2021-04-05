@@ -77,6 +77,10 @@ jobs:
         if: env.SKIP_CI != 'true'
         run: bash ${SCRIPTS_DIR}/pre.sh
 
+      - name: NGE2E
+        if: env.SKIP_CI != 'true'
+        run: e2e run -c ${NGE2E_DIR}/e2e.yaml
+
       - name: Install Istio
         if: env.SKIP_CI != 'true'
         run: |
@@ -111,9 +115,7 @@ jobs:
           kubectl get pods -A -o wide --show-labels
           kubectl get services -A -o wide
 
-      - name: NGE2E
-        if: env.SKIP_CI != 'true'
-        run: e2e run -c ${NGE2E_DIR}/e2e.yaml
+
 
       - name: Deploy demo services
         if: env.SKIP_CI != 'true'
