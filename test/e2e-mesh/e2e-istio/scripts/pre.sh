@@ -24,6 +24,7 @@ set -ex
 HELMVERSION=${HELMVERSION:-'helm-v3.0.0'}
 K8SVERSION=${K8SVERSION:-'k8s-v1.19.2'}
 KINDVERSION=${KINDVERSION:-'v0.10.0'}
+SWCTLVERSION=${SWCTLVERSION:-'0.6.0'}
 
 curl -Lo ./e2e https://github.com/Humbertzhang/nge2etest/raw/master/e2e-linux
 chmod +x ./e2e
@@ -40,4 +41,7 @@ curl -sSL "https://storage.googleapis.com/kubernetes-release/release/${K8SVERSIO
 chmod +x /tmp/kubectl
 sudo mv /tmp/kubectl /usr/local/bin/kubectl
 
-sudo apt-get install -y socat conntrack
+curl -sSL https://mirrors.bfsu.edu.cn/apache/skywalking/cli/${SWCTLVERSION}/skywalking-cli-${SWCTLVERSION}-bin.tgz -o swctl.tgz
+tar -zxvf swctl.tgz
+chmod +x skywalking-cli-${SWCTLVERSION}-bin/bin/swctl-${SWCTLVERSION}-linux-amd64
+sudo mv skywalking-cli-${SWCTLVERSION}-bin/bin/swctl-${SWCTLVERSION}-linux-amd64 /usr/local/bin/swctl
