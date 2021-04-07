@@ -40,6 +40,7 @@ curl -sSL https://get.helm.sh/${HELMVERSION}-linux-amd64.tar.gz | \
 curl -sSL "https://storage.googleapis.com/kubernetes-release/release/${K8SVERSION#k8s-}/bin/linux/amd64/kubectl" -o /tmp/kubectl
 chmod +x /tmp/kubectl
 sudo mv /tmp/kubectl /usr/local/bin/kubectl
+mkdir ~/.kube
 
 curl -sSL https://mirrors.bfsu.edu.cn/apache/skywalking/cli/${SWCTLVERSION}/skywalking-cli-${SWCTLVERSION}-bin.tgz -o swctl.tgz
 tar -zxvf swctl.tgz
