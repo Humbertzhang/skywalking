@@ -26,7 +26,7 @@ K8SVERSION=${K8SVERSION:-'k8s-v1.19.2'}
 KINDVERSION=${KINDVERSION:-'v0.10.0'}
 SWCTLVERSION=${SWCTLVERSION:-'0.6.0'}
 
-curl -Lo ./e2e https://github.com/Humbertzhang/nge2etest/raw/master/e2e-linux
+curl -Lo ./e2e https://github.com/Humbertzhang/nge2etest/releases/download/test0.1/e2e
 chmod +x ./e2e
 sudo mv ./e2e /usr/local/bin/e2e
 

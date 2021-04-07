@@ -16,13 +16,7 @@
 
 name: Istio
 
-on:
-  pull_request:
-    paths:
-      - '**'
-      - '!**.md'
-  schedule:
-    - cron: '0 8 * * *'
+on: workflow_dispatch
 
 env:
   SKIP_TEST: true
@@ -80,50 +74,3 @@ jobs:
       - name: NGE2E
         if: env.SKIP_CI != 'true'
         run: e2e run -c ${NGE2E_DIR}/e2e.yaml
-
-      - name: Deploy demo services
-        if: env.SKIP_CI != 'true'
-        run: bash ${SCRIPTS_DIR}/demo.sh
-
-      - name: Cluster Info
-        if: ${{ failure() }}
-        run: |
-          df -h
-          minikube logs
-          minikube status
-
-      - name: Set up Minikube tunnel
-        if: env.SKIP_CI != 'true'
-        run: |
-          mkdir /tmp/minikube-tunnel
-          minikube tunnel > /tmp/minikube-tunnel/a.log &
-          export POD_NAME=$(kubectl get pods -n istio-system -l "app=skywalking,release=skywalking,component=ui" -o jsonpath="{.items[0].metadata.name}")
-          echo $POD_NAME
-          kubectl -n istio-system port-forward $POD_NAME 8080:8080 > /tmp/minikube-tunnel/b.log &
-
-      - name: Run E2E test
-        if: env.SKIP_CI != 'true'
-        run: |
-          export GATEWAY_HOST=$(minikube ip)
-          export GATEWAY_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}')
-          export WEBAPP_HOST=127.0.0.1
-          export WEBAPP_PORT=8080
-
-          export SW_VERSION=$(./mvnw -q -DforceStdout -N org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version)
-
-          ./mvnw -DskipTests -N install
-          ./mvnw -f apm-application-toolkit -DskipTests -am install
-
-          ./mvnw --batch-mode -f test/e2e/pom.xml -am -DfailIfNoTests=false -Dsw.version=${SW_VERSION} verify -Dit.test=org.apache.skywalking.e2e.mesh.MetricsServiceE2E
-
-      - name: Logs
-        if: ${{ failure() }}
-        continue-on-error: true
-        run: |
-          kubectl -n istio-system logs --tail=10000 -l "app=skywalking,release=skywalking,component=ui"
-          kubectl -n istio-system logs --tail=10000 -l "app=skywalking,release=skywalking,component=oap"
-          cat /tmp/minikube-tunnel/*
-
-      - name: Clean up
-        if: env.SKIP_CI != 'true'
-        run: minikube delete

@@ -79,7 +79,7 @@ trigger:
   action: http
   interval: 3s
   times: 5
-  url: http://$GATEWAY_HOST:$GATEWAY_PORT/productpage
+  url: http://${GATEWAY_HOST}:${GATEWAY_PORT}/productpage
   method: GET
 
 verify:
